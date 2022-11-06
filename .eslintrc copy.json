@@ -1,0 +1,12 @@
+{
+	"globals": {
+		"React": true
+	},
+	"extends": ["next/core-web-vitals", "eslint:recommended", "prettier"],
+	"rules": {
+		"prefer-const": "error",
+		"eol-last": "warn",
+		"no-unused-vars": "off"
+	},
+	"plugins": ["react"]
+}

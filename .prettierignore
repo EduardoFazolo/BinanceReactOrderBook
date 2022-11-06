@@ -1,0 +1,16 @@
+# Ignore files ending up with
+*.md
+
+# Ignore Defaults
+**/.git
+**/.svn
+**/.hg
+**/node_modules
+**/.git
+**/.svn
+**/.hg
+
+# Pipeline files
+docker-compose.yml
+Dcokerfile
+azure-pipelines.yml
