@@ -26,6 +26,18 @@ export type Ticker = {
 	n: number;
 };
 
+export type MiniTicker = {
+	e: string; // Event type
+	E: number; // Event time
+	s: string; // Symbol
+	c: string; // Close price
+	o: string; // Open price
+	h: string; // High price
+	l: string; // Low price
+	v: string; // Total traded base asset volume
+	q: string; // Total traded quote asset volume
+};
+
 export type Depth = {
 	lastUpdateId: number;
 	bids: string[][];

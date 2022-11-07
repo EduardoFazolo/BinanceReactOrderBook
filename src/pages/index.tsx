@@ -12,12 +12,11 @@ const Home: NextPage = () => {
 				<link rel='icon' href='/favicon.ico' />
 			</Head>
 
-			<main className='mx-auto flex min-h-screen flex-col items-center justify-center bg-gray-800 p-4'>
-				<h1 className='text-5xl font-extrabold leading-normal text-gray-600 md:text-[5rem]'>
+			<main className='mx-auto flex min-h-screen flex-col items-center bg-gray-800 p-4'>
+				<h1 className='text-5xl font-extrabold leading-normal text-gray-600 md:text-[5rem] m-1'>
 					Order Book
 				</h1>
-				<p className='text-2xl text-gray-600'>Welcome to my OrderBook</p>
-				<OrderBook></OrderBook>
+				<OrderBook />
 			</main>
 		</>
 	);

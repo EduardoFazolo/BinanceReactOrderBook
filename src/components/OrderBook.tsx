@@ -1,46 +1,39 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
+
+import {
+    Button, MenuItem, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    TextField
+} from '@mui/material';
+
+import { addOrders, getOrders } from '../utils/orders';
+import { precisionCount, roundDown, roundUp } from '../utils/round';
+import CurrentPrice from './CurrentPrice';
+import OrdersTable from './OrdersTable';
+
+import type { SelectChangeEvent } from '@mui/material';
 
 import type { JsonValue } from 'react-use-websocket/dist/lib/types';
 
-import type { Depth, Ticker, TickerParams } from '../types/Binance';
+import type { Depth, TickerParams } from '../types/Binance';
+type DepthMessage = MessageEvent<Depth> & JsonValue;
 
-type MessageTicker = MessageEvent<Depth> & JsonValue;
-
-const OrdersTable = ({ data }: { data?: string[][] }) => {
-	console.log('data:::', data);
-	if (!data) return <div>Loading...</div>;
-	return (
-		<div>
-			{data.map(d => (
-				<div key={d[0]} className='flex flex-row'>
-					<div className='flex flex-col mr-5'>
-						<div>{d[0]}</div>
-					</div>
-					<div className='flex flex-col mr-5'>
-						<div>{d[1]}</div>
-					</div>
-					<div className='flex flex-col mr-5'>
-						<div>{Number(d[0]) * Number(d[1])}</div>
-					</div>
-				</div>
-			))}
-		</div>
-	);
-};
+let tempBids: Record<number, number> = {};
+let tempAsks: Record<number, number> = {};
 
 const OrderBook = () => {
 	const socketUrl = 'wss://stream.binance.com:9443/stream';
 
-	const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket<MessageTicker>(socketUrl);
-
-	const messageHistory = useRef<MessageEvent[]>([]);
+	const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket<DepthMessage>(socketUrl);
+	const [bids, setBids] = useState<number[][]>([]);
+	const [asks, setAsks] = useState<number[][]>([]);
 
 	const tickerName = 'btcbusd';
-
 	const reqType = 'depth20';
-
 	const wsParams = [`${tickerName}@${reqType}`];
+
+	const [decimals, setDecimals] = useState(0.1);
+	const [pair, setPair] = useState('');
 
 	const handleClickSendMessage = useCallback(
 		() =>
@@ -62,69 +55,71 @@ const OrderBook = () => {
 		[sendJsonMessage]
 	);
 
-	const connectionStatus = {
-		[ReadyState.CONNECTING]: 'Connecting',
-		[ReadyState.OPEN]: 'Open',
-		[ReadyState.CLOSING]: 'Closing',
-		[ReadyState.CLOSED]: 'Closed',
-		[ReadyState.UNINSTANTIATED]: 'Uninstantiated',
-	}[readyState];
+	const onSelectDecimal = (event: SelectChangeEvent) => {
+		tempBids = {};
+		tempAsks = {};
+		setBids([]);
+		setAsks([]);
+		const decimals = Number(event.target.value as string);
+		setDecimals(decimals);
+	};
+
+	useEffect(() => {
+		const generateOrders = async () => {
+			if (!lastJsonMessage || !lastJsonMessage.data || !lastJsonMessage.data.bids) return;
+			await Promise.all([
+				addOrders(tempBids, lastJsonMessage.data.bids, decimals, roundUp),
+				addOrders(tempAsks, lastJsonMessage.data.asks, decimals, roundDown),
+			]);
+			const [newBids, newAsks] = await Promise.all([
+				getOrders(tempBids),
+				getOrders(tempAsks),
+			]);
+			setBids(newBids);
+			setAsks(newAsks);
+		};
+		generateOrders();
+	}, [lastJsonMessage, decimals]);
 
 	return (
-		<div className='mt-4 w-[800px] h-[400px] bg-white'>
-			<button
+		<div className='mt-4 w-[800px] h-[650px] bg-white'>
+			<Button
+				variant='contained'
 				onClick={handleClickSendMessage}
-				disabled={readyState !== ReadyState.OPEN}
-				className='ml-5 mr-5 border-4 p-1 border-black'>
+				disabled={readyState !== ReadyState.OPEN}>
 				Subscribe
-			</button>
-			<button
+			</Button>
+
+			<Button
+				color='error'
+				variant='contained'
 				onClick={handleClickUnSendMessage}
 				disabled={readyState !== ReadyState.OPEN}
 				className='ml-5 mr-5 border-4 p-1 border-black'>
 				Unsubscribe
-			</button>
-			<div>The WebSocket is currently {connectionStatus}</div>
-			{lastJsonMessage ? (
-				<div className='flex flex-row w-full justify-between'>
-					<div className='flex flex-col mr-5'>
-						<div>Bid</div>
-						<div className='flex flex-row w-full justify-between'>
-							<div className='flex flex-col'>
-								<div>Price</div>
-							</div>
-							<div className='flex flex-col mr-5'>
-								<div>Quantity</div>
-							</div>
-							<div className='flex flex-col mr-5'>
-								<div>Total</div>
-							</div>
-						</div>
-						<OrdersTable data={lastJsonMessage.data?.bids}></OrdersTable>
-					</div>
-					<div className='flex flex-col mr-5'>
-						<div>Ask</div>
-						<div className='flex flex-row w-full justify-between'>
-							<div className='flex flex-col'>
-								<div>Price</div>
-							</div>
-							<div className='flex flex-col'>
-								<div>Quantity</div>
-							</div>
-							<div className='flex flex-col mr-5'>
-								<div>Total</div>
-							</div>
-						</div>
-						<OrdersTable data={lastJsonMessage.data?.asks}></OrdersTable>
-					</div>
-				</div>
-			) : null}
+			</Button>
 
-			{/* <ul>
-				{messageHistory.current.map((message, idx) => (
-					<div key={idx}>{JSON.stringify(message.data, null, 4)}</div>
-				))}
-			</ul> */}
+			<Select
+				id='decimal-aggregator-select'
+				value={decimals.toString()}
+				onChange={onSelectDecimal}>
+				<MenuItem value={0.01}>0.01</MenuItem>
+				<MenuItem value={0.1}>0.1</MenuItem>
+				<MenuItem value={1}>1</MenuItem>
+				<MenuItem value={10}>10</MenuItem>
+				<MenuItem value={50}>50</MenuItem>
+				<MenuItem value={100}>100</MenuItem>
+			</Select>
+
+			<div className='flex flex-col'>
+				<OrdersTable data={bids} decimals={decimals} className='text-red-600'></OrdersTable>
+				<CurrentPrice tickerName={tickerName} />
+
+				<OrdersTable
+					data={asks}
+					decimals={decimals}
+					className='text-green-600'></OrdersTable>
+			</div>
 		</div>
 	);
 };
