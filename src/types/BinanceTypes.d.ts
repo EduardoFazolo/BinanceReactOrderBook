@@ -44,13 +44,15 @@ export type Depth = {
 	asks: string[][];
 };
 
-export type OrdersType = {
-	bids: number[][];
-	asks: number[][];
-};
-
 export type TickerParams = {
 	method: 'SUBSCRIBE' | 'UNSUBSCRIBE';
 	params: string[];
 	id: number;
 } & JsonValue;
+
+export type OrdersType = number[][];
+
+export type OrderBookType = {
+	bids: OrdersType;
+	asks: OrdersType;
+};

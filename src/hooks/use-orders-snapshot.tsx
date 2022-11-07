@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 
 import { getCorrectSnapshot } from '../utils/orders';
 
-import type { OrdersType } from '../types/BinanceTypes';
+import type { OrderBookType } from '../types/BinanceTypes';
 
 export const useOrdersSnapshot = (symbol = 'BTCBUSD', decimals = 10) => {
-	const [snapshot, setSnapshot] = useState<OrdersType>({} as OrdersType);
+	const [snapshot, setSnapshot] = useState({} as OrderBookType);
 
 	useEffect(() => {
 		const interval = setInterval(async () => {

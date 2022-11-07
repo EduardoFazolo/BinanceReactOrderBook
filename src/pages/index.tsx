@@ -1,6 +1,7 @@
 import Head from 'next/head';
 
 import OrderBook from '../components/OrderBook';
+import { OrderBookProvider } from '../contexts/OrderBookContext';
 
 import type { NextPage } from 'next';
 const Home: NextPage = () => {
@@ -12,12 +13,14 @@ const Home: NextPage = () => {
 				<link rel='icon' href='/favicon.ico' />
 			</Head>
 
-			<main className='mx-auto flex min-h-screen flex-col items-center bg-gray-800 p-4'>
-				<h1 className='text-5xl font-extrabold leading-normal text-gray-600 md:text-[5rem] m-1'>
-					Order Book
-				</h1>
-				<OrderBook />
-			</main>
+			<OrderBookProvider>
+				<main className='mx-auto flex min-h-screen flex-col items-center bg-gray-800 p-4'>
+					<h1 className='text-5xl font-extrabold leading-normal text-gray-600 md:text-[5rem] m-1'>
+						Order Book
+					</h1>
+					<OrderBook />
+				</main>
+			</OrderBookProvider>
 		</>
 	);
 };

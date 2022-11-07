@@ -1,4 +1,4 @@
-import { Depth, OrdersType } from '../types/BinanceTypes';
+import type { Depth, OrderBookType } from '../types/BinanceTypes';
 import { roundDown, roundUp } from './round';
 
 export const addOrders = async (
@@ -16,17 +16,18 @@ export const addOrders = async (
 export const getOrders = async (bookOrders: Record<number, number>): Promise<number[][]> => {
 	return Object.keys(bookOrders)
 		.map(key => [Number(key), Number(bookOrders[Number(key)])])
-		.sort((a, b) => Number(b[0]) - Number(a[0]));
+		.sort((a, b) => Number(b[0]) - Number(a[0]))
+		.slice(0, 10);
 };
 
 export const getCorrectSnapshot = async (
 	symbol = 'BTCBUSD',
 	decimals = 10
-): Promise<OrdersType> => {
+): Promise<OrderBookType> => {
 	const cachedBids: Record<number, number> = {};
 	const cachedAsks: Record<number, number> = {};
 
-	const res = await fetch('https://api.binance.com/api/v3/depth?symbol=BTCBUSD&limit=2000');
+	const res = await fetch(`https://api.binance.com/api/v3/depth?symbol=${symbol}&limit=2000`);
 	if (res.body) {
 		const reader = res.body.getReader();
 		let result;
@@ -49,5 +50,5 @@ export const getCorrectSnapshot = async (
 		console.log('Asks snapshot:', newAsks);
 		return { bids: newBids, asks: newAsks };
 	}
-	return {} as OrdersType;
+	return {} as OrderBookType;
 };

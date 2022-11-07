@@ -3,8 +3,9 @@ import useWebSocket, { ReadyState } from 'react-use-websocket';
 
 import { Button, MenuItem, Select } from '@mui/material';
 
+import { useOrderBook } from '../contexts/OrderBookContext';
 import { addOrders, getOrders } from '../utils/orders';
-import { roundDown, roundUp } from '../utils/round';
+import { precisionCount, roundDown, roundUp } from '../utils/round';
 import CurrentPrice from './CurrentPrice';
 import OrdersTable from './OrdersTable';
 
@@ -12,13 +13,13 @@ import type { SelectChangeEvent } from '@mui/material';
 
 import type { JsonValue } from 'react-use-websocket/dist/lib/types';
 
-import type { Depth, TickerParams } from '../types/BinanceTypes';
+import type { Depth, OrderBookType, TickerParams } from '../types/BinanceTypes';
 type DepthMessage = MessageEvent<Depth> & JsonValue;
 
 let cachedBids: Record<number, number> = {};
 let cachedAsks: Record<number, number> = {};
 
-const allowedPairs = ['BTCBUSD', 'BNBBUSD', 'ETHBUSD', 'BNBETH', 'ETHBTC'];
+const allowedPairs = ['BTCBUSD', 'ETHBUSD', 'ETHBTC'];
 
 const reqType = 'depth20';
 
@@ -26,8 +27,7 @@ const OrderBook = () => {
 	const socketUrl = 'wss://stream.binance.com:9443/stream';
 
 	const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket<DepthMessage>(socketUrl);
-	const [bids, setBids] = useState<number[][]>([]);
-	const [asks, setAsks] = useState<number[][]>([]);
+	const { orders, setOrders, setCurrentPair, onSelectNewPair } = useOrderBook();
 
 	const [decimals, setDecimals] = useState(0.1);
 	const [pair, setPair] = useState('BTCBUSD');
@@ -59,24 +59,23 @@ const OrderBook = () => {
 				params: [`${pair.toLowerCase()}@${reqType}`],
 				id: 1,
 			} as TickerParams);
-			setBids([]);
-			setAsks([]);
 			const newPair = event.target.value as string;
-			setPair(newPair);
 			sendJsonMessage({
 				method: 'SUBSCRIBE',
 				params: [`${newPair.toLowerCase()}@${reqType}`],
 				id: 1,
 			} as TickerParams);
+			setCurrentPair(newPair);
+			onSelectNewPair(pair, newPair);
+			setPair(newPair);
+			setOrders({} as OrderBookType);
 		},
-		[sendJsonMessage, pair]
+		[sendJsonMessage, pair, setCurrentPair, setOrders, onSelectNewPair]
 	);
 
 	const onSelectDecimal = (event: SelectChangeEvent) => {
 		cachedBids = {};
 		cachedAsks = {};
-		setBids([]);
-		setAsks([]);
 		const decimals = Number(event.target.value as string);
 		setDecimals(decimals);
 	};
@@ -92,12 +91,12 @@ const OrderBook = () => {
 				getOrders(cachedBids),
 				getOrders(cachedAsks),
 			]);
-			setBids(newBids);
-			setAsks(newAsks);
+			setOrders({} as OrderBookType);
+			setOrders({ bids: newBids, asks: newAsks });
 		};
 
 		generateOrders();
-	}, [lastJsonMessage, decimals]);
+	}, [lastJsonMessage, decimals, setOrders]);
 
 	return (
 		<div className='mt-4 w-[800px] h-[650px] bg-white'>
@@ -138,11 +137,14 @@ const OrderBook = () => {
 			</Select>
 
 			<div className='flex flex-col'>
-				<OrdersTable data={bids} decimals={decimals} className='text-red-600'></OrdersTable>
-				<CurrentPrice tickerName={pair.toLowerCase()} />
+				<OrdersTable
+					data={orders.bids}
+					decimals={decimals}
+					className='text-red-600'></OrdersTable>
+				<CurrentPrice />
 
 				<OrdersTable
-					data={asks}
+					data={orders.asks}
 					decimals={decimals}
 					className='text-green-600'></OrdersTable>
 			</div>
