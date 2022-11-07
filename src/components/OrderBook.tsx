@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 
-import {
-    Button, MenuItem, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    TextField
-} from '@mui/material';
+import { Button, MenuItem, Select } from '@mui/material';
 
 import { addOrders, getOrders } from '../utils/orders';
-import { precisionCount, roundDown, roundUp } from '../utils/round';
+import { roundDown, roundUp } from '../utils/round';
 import CurrentPrice from './CurrentPrice';
 import OrdersTable from './OrdersTable';
 
@@ -15,11 +12,15 @@ import type { SelectChangeEvent } from '@mui/material';
 
 import type { JsonValue } from 'react-use-websocket/dist/lib/types';
 
-import type { Depth, TickerParams } from '../types/Binance';
+import type { Depth, TickerParams } from '../types/BinanceTypes';
 type DepthMessage = MessageEvent<Depth> & JsonValue;
 
-let tempBids: Record<number, number> = {};
-let tempAsks: Record<number, number> = {};
+let cachedBids: Record<number, number> = {};
+let cachedAsks: Record<number, number> = {};
+
+const allowedPairs = ['BTCBUSD', 'BNBBUSD', 'ETHBUSD', 'BNBETH', 'ETHBTC'];
+
+const reqType = 'depth20';
 
 const OrderBook = () => {
 	const socketUrl = 'wss://stream.binance.com:9443/stream';
@@ -28,36 +29,52 @@ const OrderBook = () => {
 	const [bids, setBids] = useState<number[][]>([]);
 	const [asks, setAsks] = useState<number[][]>([]);
 
-	const tickerName = 'btcbusd';
-	const reqType = 'depth20';
-	const wsParams = [`${tickerName}@${reqType}`];
-
 	const [decimals, setDecimals] = useState(0.1);
-	const [pair, setPair] = useState('');
+	const [pair, setPair] = useState('BTCBUSD');
 
 	const handleClickSendMessage = useCallback(
 		() =>
 			sendJsonMessage({
 				method: 'SUBSCRIBE',
-				params: wsParams,
+				params: [`${pair.toLowerCase()}@${reqType}`],
 				id: 1,
 			} as TickerParams),
-		[sendJsonMessage]
+		[sendJsonMessage, pair]
 	);
 
 	const handleClickUnSendMessage = useCallback(
 		() =>
 			sendJsonMessage({
 				method: 'UNSUBSCRIBE',
-				params: wsParams,
+				params: [`${pair.toLowerCase()}@${reqType}`],
 				id: 1,
 			} as TickerParams),
-		[sendJsonMessage]
+		[sendJsonMessage, pair]
+	);
+
+	const onChangePair = useCallback(
+		(event: SelectChangeEvent) => {
+			sendJsonMessage({
+				method: 'UNSUBSCRIBE',
+				params: [`${pair.toLowerCase()}@${reqType}`],
+				id: 1,
+			} as TickerParams);
+			setBids([]);
+			setAsks([]);
+			const newPair = event.target.value as string;
+			setPair(newPair);
+			sendJsonMessage({
+				method: 'SUBSCRIBE',
+				params: [`${newPair.toLowerCase()}@${reqType}`],
+				id: 1,
+			} as TickerParams);
+		},
+		[sendJsonMessage, pair]
 	);
 
 	const onSelectDecimal = (event: SelectChangeEvent) => {
-		tempBids = {};
-		tempAsks = {};
+		cachedBids = {};
+		cachedAsks = {};
 		setBids([]);
 		setAsks([]);
 		const decimals = Number(event.target.value as string);
@@ -68,16 +85,17 @@ const OrderBook = () => {
 		const generateOrders = async () => {
 			if (!lastJsonMessage || !lastJsonMessage.data || !lastJsonMessage.data.bids) return;
 			await Promise.all([
-				addOrders(tempBids, lastJsonMessage.data.bids, decimals, roundUp),
-				addOrders(tempAsks, lastJsonMessage.data.asks, decimals, roundDown),
+				addOrders(cachedBids, lastJsonMessage.data.bids, decimals, roundUp),
+				addOrders(cachedAsks, lastJsonMessage.data.asks, decimals, roundDown),
 			]);
 			const [newBids, newAsks] = await Promise.all([
-				getOrders(tempBids),
-				getOrders(tempAsks),
+				getOrders(cachedBids),
+				getOrders(cachedAsks),
 			]);
 			setBids(newBids);
 			setAsks(newAsks);
 		};
+
 		generateOrders();
 	}, [lastJsonMessage, decimals]);
 
@@ -99,6 +117,14 @@ const OrderBook = () => {
 				Unsubscribe
 			</Button>
 
+			<Select id='symbol-select' value={pair} onChange={onChangePair}>
+				{allowedPairs.map(p => (
+					<MenuItem key={p} value={p}>
+						{p}
+					</MenuItem>
+				))}
+			</Select>
+
 			<Select
 				id='decimal-aggregator-select'
 				value={decimals.toString()}
@@ -113,7 +139,7 @@ const OrderBook = () => {
 
 			<div className='flex flex-col'>
 				<OrdersTable data={bids} decimals={decimals} className='text-red-600'></OrdersTable>
-				<CurrentPrice tickerName={tickerName} />
+				<CurrentPrice tickerName={pair.toLowerCase()} />
 
 				<OrdersTable
 					data={asks}

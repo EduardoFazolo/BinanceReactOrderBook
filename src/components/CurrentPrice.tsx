@@ -3,7 +3,7 @@ import useWebSocket from 'react-use-websocket';
 
 import type { JsonValue } from 'react-use-websocket/dist/lib/types';
 
-import type { MiniTicker, TickerParams } from '../types/Binance';
+import type { MiniTicker, TickerParams } from '../types/BinanceTypes';
 
 type MiniTickerMessage = MessageEvent<MiniTicker> & JsonValue;
 

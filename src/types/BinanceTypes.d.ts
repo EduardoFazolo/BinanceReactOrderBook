@@ -44,6 +44,11 @@ export type Depth = {
 	asks: string[][];
 };
 
+export type OrdersType = {
+	bids: number[][];
+	asks: number[][];
+};
+
 export type TickerParams = {
 	method: 'SUBSCRIBE' | 'UNSUBSCRIBE';
 	params: string[];
