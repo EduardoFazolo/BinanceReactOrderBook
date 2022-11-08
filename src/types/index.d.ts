@@ -50,9 +50,11 @@ export type TickerParams = {
 	id: number;
 } & JsonValue;
 
-export type OrdersType = number[][];
+export type NumberMatrix = number[][];
 
 export type OrderBookType = {
-	bids: OrdersType;
-	asks: OrdersType;
+	bids: NumberMatrix;
+	asks: NumberMatrix;
 };
+
+export type OrderBookMap = Record<number, number>;

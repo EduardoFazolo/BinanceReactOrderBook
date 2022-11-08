@@ -2,9 +2,10 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from
 
 import { precisionCount } from '../utils/round';
 
-import type { OrdersType } from '../types/BinanceTypes';
+import type { NumberMatrix } from '../types';
+
 interface Props {
-	data: OrdersType;
+	data: NumberMatrix;
 	decimals: number;
 	className?: string;
 }
@@ -35,7 +36,7 @@ const OrdersTable = ({ data, decimals, className }: Props) => {
 								<TableCell className='p-0 text-inherit text-left border-b-0'>
 									{price.toFixed(precisionCount(decimals))}
 								</TableCell>
-								<TableCell className='p-0 text-default-gray text-center border-b-0'>
+								<TableCell className='p-0 text-default-gray text-right border-b-0'>
 									{amount.toFixed(5)}
 								</TableCell>
 								<TableCell className='p-0 text-default-gray text-right border-b-0'>

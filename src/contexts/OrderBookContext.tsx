@@ -1,10 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import useWebSocket from 'react-use-websocket';
 
-import type { JsonValue } from 'react-use-websocket/dist/lib/types';
+import { env } from '../env/client.mjs';
 
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
-import type { MiniTicker, OrderBookType, TickerParams } from '../types/BinanceTypes';
+import type { JsonValue } from 'react-use-websocket/dist/lib/types';
+import type { MiniTicker, OrderBookType, TickerParams } from '../types';
+type MiniTickerMessage = MessageEvent<MiniTicker> & JsonValue;
+
 type OrderBookContextType = {
 	orders: OrderBookType;
 	setOrders: Dispatch<SetStateAction<OrderBookType>>;
@@ -28,30 +31,27 @@ export const useOrderBook = () => {
 	return useContext(OrderBookContex) as OrderBookContextType;
 };
 
-type MiniTickerMessage = MessageEvent<MiniTicker> & JsonValue;
-
 function useOrderBookHook() {
 	const [orders, setOrders] = useState({} as OrderBookType);
 	const [currentPair, setCurrentPair] = useState('BTCBUSD');
 	const [currentPrice, setCurrentPrice] = useState(0);
 	const [lastPrice, setLastPrice] = useState(0);
 
-	const socketUrl = 'wss://stream.binance.com:9443/stream';
-
-	const { sendJsonMessage, lastJsonMessage, readyState } =
-		useWebSocket<MiniTickerMessage>(socketUrl);
+	const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket<MiniTickerMessage>(
+		env.NEXT_PUBLIC_SOCKET_URL
+	);
 
 	const onSelectNewPair = useCallback(
 		(lastPair: string, newPair: string) => {
 			setLastPrice(currentPrice);
 			sendJsonMessage({
 				method: 'UNSUBSCRIBE',
-				params: [`${lastPair.toLowerCase()}@miniTicker`],
+				params: [`${lastPair.toLowerCase()}@${env.NEXT_PUBLIC_TICKER_REQUEST}`],
 				id: 2,
 			} as TickerParams);
 			sendJsonMessage({
 				method: 'SUBSCRIBE',
-				params: [`${newPair.toLowerCase()}@miniTicker`],
+				params: [`${newPair.toLowerCase()}@${env.NEXT_PUBLIC_TICKER_REQUEST}`],
 				id: 2,
 			} as TickerParams);
 		},

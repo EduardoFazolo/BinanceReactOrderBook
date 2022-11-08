@@ -1,12 +1,12 @@
 // @ts-check
-import { z } from "zod";
+import { z } from 'zod';
 
 /**
  * Specify your server-side environment variables schema here.
  * This way you can ensure the app isn't built with invalid env vars.
  */
 export const serverSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]),
+	NODE_ENV: z.enum(['development', 'test', 'production']),
 });
 
 /**
@@ -15,7 +15,9 @@ export const serverSchema = z.object({
  * To expose them to the client, prefix them with `NEXT_PUBLIC_`.
  */
 export const clientSchema = z.object({
-  // NEXT_PUBLIC_CLIENTVAR: z.string(),
+	NEXT_PUBLIC_SOCKET_URL: z.string(),
+	NEXT_PUBLIC_DEPTH_REQUEST: z.string(),
+	NEXT_PUBLIC_TICKER_REQUEST: z.string(),
 });
 
 /**
@@ -25,5 +27,7 @@ export const clientSchema = z.object({
  * @type {{ [k in keyof z.infer<typeof clientSchema>]: z.infer<typeof clientSchema>[k] | undefined }}
  */
 export const clientEnv = {
-  // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
+	NEXT_PUBLIC_SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL || '',
+	NEXT_PUBLIC_DEPTH_REQUEST: process.env.NEXT_PUBLIC_DEPTH_REQUEST || '',
+	NEXT_PUBLIC_TICKER_REQUEST: process.env.NEXT_PUBLIC_TICKER_REQUEST || '',
 };

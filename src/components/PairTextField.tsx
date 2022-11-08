@@ -23,7 +23,7 @@ interface Props {
 	value: string;
 }
 
-const InputField = ({ onChange, value }: Props) => {
+const PairTextField = ({ onChange, value }: Props) => {
 	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const newValue = event.target.value
 			.slice(0, 8)
@@ -46,4 +46,4 @@ const InputField = ({ onChange, value }: Props) => {
 	);
 };
 
-export default InputField;
+export default PairTextField;

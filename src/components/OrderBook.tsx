@@ -1,68 +1,69 @@
 import { useCallback, useEffect, useState } from 'react';
 import useWebSocket from 'react-use-websocket';
 
-import { Button, MenuItem, Select, TextField } from '@mui/material';
+import { Button } from '@mui/material';
 
 import { useOrderBook } from '../contexts/OrderBookContext';
-import { addOrders, getOrders } from '../utils/orders';
-import { roundDown, roundUp } from '../utils/round';
+import { env } from '../env/client.mjs';
+import { addAllOrdersToCache, getAllFormattedOrders } from '../utils/orders';
 import CurrentPrice from './CurrentPrice';
-import InputField from './InputField';
 import OrdersTable from './OrdersTable';
+import PairTextField from './PairTextField';
 import SelectDecimals from './SelectDecimals';
 
 import type { SelectChangeEvent } from '@mui/material';
-
 import type { JsonValue } from 'react-use-websocket/dist/lib/types';
-
-import type { Depth, TickerParams } from '../types/BinanceTypes';
+import type { Depth, OrderBookMap, TickerParams } from '../types';
 type DepthMessage = MessageEvent<Depth> & JsonValue;
 
-let cachedBids: Record<number, number> = {};
-let cachedAsks: Record<number, number> = {};
-
-// TODO: Add this on env file
-const reqType = 'depth20';
+let cachedBids: OrderBookMap = {};
+let cachedAsks: OrderBookMap = {};
+let pair = '';
 
 const OrderBook = () => {
-	const socketUrl = 'wss://stream.binance.com:9443/stream';
-
-	const { sendJsonMessage, lastJsonMessage } = useWebSocket<DepthMessage>(socketUrl);
+	const { sendJsonMessage, lastJsonMessage } = useWebSocket<DepthMessage>(
+		env.NEXT_PUBLIC_SOCKET_URL
+	);
 	const { orders, setOrders, setCurrentPair, onSelectNewPair } = useOrderBook();
 
 	const [decimals, setDecimals] = useState(0.1);
-	const [pair, setPair] = useState('BTCBUSD');
-	const [pairName, setPairName] = useState('BTCBUSD');
+	const [pairInput, setPaitInput] = useState('BTCBUSD');
+	const [isBlocked, setIsBlocked] = useState(false);
 
-	const sendUnsub = useCallback(() => {
-		return sendJsonMessage({
-			method: 'UNSUBSCRIBE',
-			params: [`${pair.toLowerCase()}@${reqType}`],
-			id: 1,
-		} as TickerParams);
-	}, [pair, sendJsonMessage]);
+	const unsubDepth = useCallback(
+		(oldPair: string) => {
+			return sendJsonMessage({
+				method: 'UNSUBSCRIBE',
+				params: [`${oldPair.toLowerCase()}@${env.NEXT_PUBLIC_DEPTH_REQUEST}`],
+				id: 1,
+			} as TickerParams);
+		},
+		[sendJsonMessage]
+	);
 
-	const sendSubs = useCallback(
+	const subDepth = useCallback(
 		(newPair: string) => {
 			return sendJsonMessage({
 				method: 'SUBSCRIBE',
-				params: [`${newPair.toLowerCase()}@${reqType}`],
+				params: [`${newPair.toLowerCase()}@${env.NEXT_PUBLIC_DEPTH_REQUEST}`],
 				id: 1,
 			} as TickerParams);
 		},
 		[sendJsonMessage]
 	);
 	const onSubmitNewPair = useCallback(async () => {
-		sendUnsub();
-		sendSubs(pairName);
+		setIsBlocked(true);
+		unsubDepth(pair);
+		subDepth(pairInput);
 		// Wait for WebSocket to answer
 		await new Promise(r => setTimeout(r, 500));
-		setCurrentPair(pairName);
-		onSelectNewPair(pair, pairName);
-		setPair(pairName);
+		setIsBlocked(false);
+		setCurrentPair(pairInput);
+		onSelectNewPair(pair, pairInput);
+		pair = pairInput;
 		cachedBids = {};
 		cachedAsks = {};
-	}, [pair, setCurrentPair, onSelectNewPair, sendSubs, sendUnsub, pairName]);
+	}, [setCurrentPair, onSelectNewPair, subDepth, unsubDepth, pairInput]);
 
 	const onSelectDecimal = (event: SelectChangeEvent) => {
 		cachedBids = {};
@@ -74,30 +75,35 @@ const OrderBook = () => {
 	useEffect(() => {
 		const generateOrders = async () => {
 			if (!lastJsonMessage || !lastJsonMessage.data || !lastJsonMessage.data.bids) return;
-			await Promise.all([
-				addOrders(cachedBids, lastJsonMessage.data.bids, decimals, roundUp),
-				addOrders(cachedAsks, lastJsonMessage.data.asks, decimals, roundDown),
-			]);
-			const [newBids, newAsks] = await Promise.all([
-				getOrders(cachedBids),
-				getOrders(cachedAsks),
-			]);
+			await addAllOrdersToCache(cachedBids, cachedAsks, lastJsonMessage.data, decimals);
+			const [newBids, newAsks] = await getAllFormattedOrders(cachedBids, cachedAsks);
 			setOrders({ bids: newBids, asks: newAsks });
 		};
-
 		generateOrders();
-	}, [lastJsonMessage, decimals, setOrders, pair]);
+
+		const onEnterListener = (event: KeyboardEvent) => {
+			if (!isBlocked && (event.code === 'Enter' || event.code === 'NumpadEnter')) {
+				event.preventDefault();
+				onSubmitNewPair();
+			}
+		};
+		document.addEventListener('keydown', onEnterListener);
+		return () => {
+			document.removeEventListener('keydown', onEnterListener);
+		};
+	}, [lastJsonMessage, decimals, setOrders, isBlocked, onSubmitNewPair]);
 
 	return (
-		<div className='mt-4 w-full md:w-[400px] h-[650px] bg-[#182434] flex flex-col border-solid border-[1px] border-[#4d5664]'>
+		<div className='mt-4 w-full md:w-[400px] h-[650px] bg-light-dark-blue flex flex-col border-solid border-[1px] border-[#4d5664]'>
 			<div className='flex justify-center items-center p-4'>
-				<InputField value={pairName} onChange={setPairName}></InputField>
+				<PairTextField value={pairInput} onChange={setPaitInput}></PairTextField>
 				<SelectDecimals
 					value={decimals.toString()}
 					onSelectElement={onSelectDecimal}></SelectDecimals>
 				<Button
+					disabled={isBlocked}
 					onClick={onSubmitNewPair}
-					className='text-light-gray border-solid border-2 h-[56px] hover:bg-default-gray hover:bg-opacity-20'>
+					className='text-light-gray border-solid border-[1px] h-[56px] hover:bg-default-gray hover:bg-opacity-20 '>
 					Search
 				</Button>
 			</div>

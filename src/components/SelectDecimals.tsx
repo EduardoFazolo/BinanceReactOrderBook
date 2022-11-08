@@ -1,7 +1,7 @@
+import { MenuItem, Select } from '@mui/material';
+
 import type { SelectChangeEvent, SelectProps } from '@mui/material';
 import type { ReactNode } from 'react';
-
-import { MenuItem, Select } from '@mui/material';
 
 const selectCss = {
 	border: '1px solid #9ca9b4',

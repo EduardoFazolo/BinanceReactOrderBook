@@ -16,7 +16,7 @@ const Home: NextPage = () => {
 			</Head>
 
 			<OrderBookProvider>
-				<main className='flex min-h-screen w-full flex-col items-center bg-[#0d1019] p-4 pt-2 md:pt-4'>
+				<main className='flex min-h-screen w-full flex-col items-center bg-dark-blue p-4 pt-2 md:pt-4'>
 					<div className='flex'>
 						<Title className='text-price-up'>Order</Title>
 						<Title className='text-price-down'>Book</Title>
