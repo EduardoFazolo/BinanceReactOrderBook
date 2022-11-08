@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import useWebSocket, { ReadyState } from 'react-use-websocket';
+import useWebSocket from 'react-use-websocket';
 
 import type { JsonValue } from 'react-use-websocket/dist/lib/types';
 
@@ -41,14 +41,6 @@ function useOrderBookHook() {
 	const { sendJsonMessage, lastJsonMessage, readyState } =
 		useWebSocket<MiniTickerMessage>(socketUrl);
 
-	const getCurrentPrice = useCallback(() => {
-		return sendJsonMessage({
-			method: 'SUBSCRIBE',
-			params: [`${currentPair.toLowerCase()}@miniTicker`],
-			id: 2,
-		} as TickerParams);
-	}, [sendJsonMessage, currentPair]);
-
 	const onSelectNewPair = useCallback(
 		(lastPair: string, newPair: string) => {
 			setLastPrice(currentPrice);
@@ -67,12 +59,9 @@ function useOrderBookHook() {
 	);
 
 	useEffect(() => {
-		if (readyState !== ReadyState.OPEN) {
-			getCurrentPrice();
-		}
 		setLastPrice(currentPrice);
 		setCurrentPrice(lastJsonMessage?.data?.c ? Number(lastJsonMessage?.data?.c) : 0);
-	}, [lastJsonMessage, readyState, getCurrentPrice, setLastPrice]);
+	}, [lastJsonMessage, readyState, setLastPrice]);
 
 	return {
 		orders,

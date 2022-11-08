@@ -14,7 +14,7 @@ const Home: NextPage = () => {
 			</Head>
 
 			<OrderBookProvider>
-				<main className='mx-auto flex min-h-screen flex-col items-center bg-gray-800 p-4'>
+				<main className='mx-auto flex min-h-screen flex-col items-center bg-[#0d1019] p-4'>
 					<h1 className='text-5xl font-extrabold leading-normal text-gray-600 md:text-[5rem] m-1'>
 						Order Book
 					</h1>
