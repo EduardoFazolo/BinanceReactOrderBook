@@ -1,12 +1,6 @@
 import { styled, TextField } from '@mui/material';
 
 const TextFieldWithCss = styled(TextField)({
-	'& label.Mui-focused': {
-		color: '#b4c8d3',
-	},
-	'& .MuiInput-underline:after': {
-		borderBottomColor: '#b4c8d3',
-	},
 	'& .MuiOutlinedInput-root': {
 		backgroundColor: '#263e59',
 		'& fieldset': {
@@ -24,19 +18,29 @@ const TextFieldWithCss = styled(TextField)({
 	},
 });
 
-const InputField = ({
-	setPairName,
-}: {
-	setPairName(event: React.ChangeEvent<HTMLInputElement>): void;
-}) => {
+interface Props {
+	onChange(newValue: string): void;
+	value: string;
+}
+
+const InputField = ({ onChange, value }: Props) => {
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const newValue = event.target.value
+			.slice(0, 8)
+			.toUpperCase()
+			.replace(/[^a-z]/gi, '');
+
+		onChange(newValue);
+	};
 	return (
 		<TextFieldWithCss
 			id='pair-input'
 			label='Pair'
+			value={value}
 			variant='outlined'
 			className='border-white'
 			InputProps={{ className: 'text-light-gray font-bold', autoComplete: 'off' }}
-			onChange={setPairName}
+			onChange={handleChange}
 			InputLabelProps={{ className: 'text-light-gray' }}
 		/>
 	);

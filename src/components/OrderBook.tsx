@@ -52,7 +52,7 @@ const OrderBook = () => {
 		},
 		[sendJsonMessage]
 	);
-	const onChangePair = useCallback(async () => {
+	const onSubmitNewPair = useCallback(async () => {
 		sendUnsub();
 		sendSubs(pairName);
 		// Wait for WebSocket to answer
@@ -89,13 +89,17 @@ const OrderBook = () => {
 	}, [lastJsonMessage, decimals, setOrders, pair]);
 
 	return (
-		<div className='mt-4 w-[400px] h-[650px] bg-[#182434] flex flex-col border-solid border-[1px] border-[#4d5664]'>
+		<div className='mt-4 w-full md:w-[400px] h-[650px] bg-[#182434] flex flex-col border-solid border-[1px] border-[#4d5664]'>
 			<div className='flex justify-center items-center p-4'>
-				<InputField setPairName={event => setPairName(event.target.value)}></InputField>
+				<InputField value={pairName} onChange={setPairName}></InputField>
 				<SelectDecimals
 					value={decimals.toString()}
 					onSelectElement={onSelectDecimal}></SelectDecimals>
-				<Button onClick={onChangePair}>Search</Button>
+				<Button
+					onClick={onSubmitNewPair}
+					className='text-light-gray border-solid border-2 h-[56px] hover:bg-default-gray hover:bg-opacity-20'>
+					Search
+				</Button>
 			</div>
 
 			<div className='flex flex-col h-[550px] justify-between w-full p-4'>

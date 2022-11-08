@@ -3,7 +3,9 @@ import Head from 'next/head';
 import OrderBook from '../components/OrderBook';
 import { OrderBookProvider } from '../contexts/OrderBookContext';
 
+import type { ReactNode } from 'react';
 import type { NextPage } from 'next';
+
 const Home: NextPage = () => {
 	return (
 		<>
@@ -14,14 +16,23 @@ const Home: NextPage = () => {
 			</Head>
 
 			<OrderBookProvider>
-				<main className='mx-auto flex min-h-screen flex-col items-center bg-[#0d1019] p-4'>
-					<h1 className='text-5xl font-extrabold leading-normal text-gray-600 md:text-[5rem] m-1'>
-						Order Book
-					</h1>
+				<main className='flex min-h-screen w-full flex-col items-center bg-[#0d1019] p-4 pt-2 md:pt-4'>
+					<div className='flex'>
+						<Title className='text-price-up'>Order</Title>
+						<Title className='text-price-down'>Book</Title>
+					</div>
 					<OrderBook />
 				</main>
 			</OrderBookProvider>
 		</>
+	);
+};
+
+const Title = ({ className, children }: { className: string; children: ReactNode }) => {
+	return (
+		<h1 className={'text-2xl font-extrabold leading-normal md:text-[5rem] m-1 ' + className}>
+			{children}
+		</h1>
 	);
 };
 
