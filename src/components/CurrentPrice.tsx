@@ -16,10 +16,10 @@ const CurrentPrice = () => {
 
 	if (currentPrice > lastPrice) {
 		color = 'text-price-up';
-		arrow = '⮝';
+		arrow = '↑';
 	} else if (currentPrice < lastPrice) {
 		color = 'text-price-down';
-		arrow = '⮟';
+		arrow = '↓';
 	}
 
 	return (
